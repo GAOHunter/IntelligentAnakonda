@@ -1,4 +1,5 @@
 import sys
+import time
 import tkinter
 #from PIL import Image
 from tkinter import messagebox
@@ -90,7 +91,7 @@ class Snake(object):
 
         self.direction = 'Up'
         self.status = ['run', 'stop']
-        self.speed = 1000
+        self.speed = 300
         self.color = '#5FA8D9'
         self.gameover = False
         self.score = 0
@@ -177,16 +178,20 @@ class Anakonda(tkinter.Frame):
     def bfs(self):
         direc = ('Up', 'Down', 'Left', 'Right')
         direcSet = []
-        for ix in range(0, 10):
+        for ix in range(0, 3):
             direcSet.append(direc[randint(0, 3)])
-        print(direcSet)
-        for direc in direcSet:
-            self.snake.direction = direc
-            self.snake.move()
+        return direcSet
 
     def run(self):
         if not self.snake.status[0] == 'stop':
-            self.bfs()
+            direcSet = self.bfs()
+            cnt = 0
+            for direc in direcSet:
+                cnt += 1
+                self.snake.direction = direc
+                self.snake.move()
+                print(direc, cnt)
+
         if self.snake.gameover == True:
             print(self.snake.body, self.snake.direction)
             message = messagebox.showinfo("Game Over", "Your Score: %d" % self.snake.score)
