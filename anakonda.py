@@ -113,7 +113,7 @@ class Snake(object):
         self.gridDraw.drawSnakeTail(self.body[-1], self.tailPhoto, self.direction)
 
     def move(self):
-
+        '''
         #判断方向操作是否合理，若合理继续，不合理停止。
         direcSet = ('Up', 'Down', 'Left', 'Right')
         currentDirec = ''
@@ -129,10 +129,12 @@ class Snake(object):
                 currentDirec = 'Right'
             else:
                 currentDirec = 'Left'
+        print(currentDirec)
         if direcSet.index(currentDirec) - direcSet.index(self.direction) == -1:
-            return
+            self.move()
         if direcSet.index(currentDirec) - direcSet.index(self.direction) == 1:
-            return
+            self.move()
+        '''
 
         head = self.body[0]
         if self.direction == 'Up':
@@ -172,6 +174,10 @@ class Anakonda(tkinter.Frame):
         self.gridDraw = gridDrawDraw(master, *args, **kwargs)
         self.gridDraw.drawAll()
         self.snake = Snake(self.gridDraw)
+
+        #保存bfs中的路径节点关系
+        self.forward = [ [(-1, -1) for i in range(0, 50)] for j in range(0, 50)]
+
         #保存移动路径
         self.path = []
         #self.master.bind("<Key>", self.key_release)
@@ -180,34 +186,41 @@ class Anakonda(tkinter.Frame):
     def bfs(self):
 
         headPos = self.snake.body[0]
-        direc = self.snake.direction
 
         vis = [ [False for i in range(0, 50)] for j in range(0, 50)]
-        print(vis, sep=',')
 
         que = [headPos]
         vis[headPos[0]][headPos[1]] = True
 
         while not len(que) == 0:
             headPos = que.pop(0)
-            print(headPos)
             if headPos == self.snake.food.pos:
+                while not headPos == (-1, -1):
+                    self.path.append(headPos)
+                    x = headPos[0]
+                    y = headPos[1]
+                    headPos = self.forward[x][y]
+                print('bfs path = ', self.path)
                 return
 
             if not vis[headPos[0]+1][headPos[1]]:
                 vis[headPos[0]+1][headPos[1]] = True
+                self.forward[headPos[0]+1][headPos[1]] = (headPos[0], headPos[1])
                 que.append((headPos[0]+1, headPos[1]))
 
             if not vis[headPos[0]-1][headPos[1]]:
                 vis[headPos[0]-1][headPos[1]] = True
+                self.forward[headPos[0]-1][headPos[1]] = (headPos[0], headPos[1])
                 que.append((headPos[0]-1, headPos[1]))
 
             if not vis[headPos[0]][headPos[1]+1]:
                 vis[headPos[0]][headPos[1]+1] = True
+                self.forward[headPos[0]][headPos[1]+1] = (headPos[0], headPos[1])
                 que.append((headPos[0], headPos[1]+1))
 
             if not vis[headPos[0]][headPos[1]-1]:
                 vis[headPos[0]][headPos[1]-1] = True
+                self.forward[headPos[0]][headPos[1]-1] = (headPos[0], headPos[1])
                 que.append((headPos[0], headPos[1]-1))
         '''
         direc = ('Up', 'Down', 'Left', 'Right')
@@ -217,8 +230,18 @@ class Anakonda(tkinter.Frame):
 
     def run(self):
         if not self.snake.status[0] == 'stop' and not len(self.path) == 0:
-            self.snake.direction = self.path[0]
-            self.path.pop(0)
+            pos = self.path.pop(-1)
+            if pos[0] == 10 and pos[1] == 6:
+                pos = self.path.pop(-1)
+            print(pos)
+            if pos[0] - self.snake.body[0][0] == 1:
+                self.snake.direction = 'Right'
+            if pos[0] - self.snake.body[0][0] == -1:
+                self.snake.direction = 'Left'
+            if pos[1] - self.snake.body[0][1] == 1:
+                self.snake.direction = 'Up'
+            if pos[1] - self.snake.body[0][1] == 1:
+                self.snake.direction = 'Down'
             self.snake.move()
 
         if self.snake.gameover == True:
