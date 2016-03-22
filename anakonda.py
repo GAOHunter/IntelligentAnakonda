@@ -172,25 +172,54 @@ class Anakonda(tkinter.Frame):
         self.gridDraw = gridDrawDraw(master, *args, **kwargs)
         self.gridDraw.drawAll()
         self.snake = Snake(self.gridDraw)
+        #保存移动路径
+        self.path = []
         #self.master.bind("<Key>", self.key_release)
         self.snake.display()
 
     def bfs(self):
+
+        headPos = self.snake.body[0]
+        direc = self.snake.direction
+
+        vis = [ [False for i in range(0, 50)] for j in range(0, 50)]
+        print(vis, sep=',')
+
+        que = [headPos]
+        vis[headPos[0]][headPos[1]] = True
+
+        while not len(que) == 0:
+            headPos = que.pop(0)
+            print(headPos)
+            if headPos == self.snake.food.pos:
+                return
+
+            if not vis[headPos[0]+1][headPos[1]]:
+                vis[headPos[0]+1][headPos[1]] = True
+                que.append((headPos[0]+1, headPos[1]))
+
+            if not vis[headPos[0]-1][headPos[1]]:
+                vis[headPos[0]-1][headPos[1]] = True
+                que.append((headPos[0]-1, headPos[1]))
+
+            if not vis[headPos[0]][headPos[1]+1]:
+                vis[headPos[0]][headPos[1]+1] = True
+                que.append((headPos[0], headPos[1]+1))
+
+            if not vis[headPos[0]][headPos[1]-1]:
+                vis[headPos[0]][headPos[1]-1] = True
+                que.append((headPos[0], headPos[1]-1))
+        '''
         direc = ('Up', 'Down', 'Left', 'Right')
-        direcSet = []
-        for ix in range(0, 3):
-            direcSet.append(direc[randint(0, 3)])
-        return direcSet
+        for ix in range(0, 100):
+            self.path.append(direc[randint(0, 3)])
+        '''
 
     def run(self):
-        if not self.snake.status[0] == 'stop':
-            direcSet = self.bfs()
-            cnt = 0
-            for direc in direcSet:
-                cnt += 1
-                self.snake.direction = direc
-                self.snake.move()
-                print(direc, cnt)
+        if not self.snake.status[0] == 'stop' and not len(self.path) == 0:
+            self.snake.direction = self.path[0]
+            self.path.pop(0)
+            self.snake.move()
 
         if self.snake.gameover == True:
             print(self.snake.body, self.snake.direction)
@@ -214,6 +243,7 @@ class Anakonda(tkinter.Frame):
 def main():
     root = tkinter.Tk()
     anakonda = Anakonda(master=root)
+    anakonda.bfs()
     anakonda.run()
     anakonda.mainloop()
 
