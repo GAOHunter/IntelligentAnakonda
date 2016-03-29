@@ -1,7 +1,8 @@
+# coding:utf-8
 import sys
 import time
 import tkinter
-#from PIL import Image
+from queue import Queue
 from tkinter import messagebox
 from random import randint
 
@@ -116,51 +117,128 @@ class Snake(object):
             self.food.set_pos()
         self.food.display()
 
+    def getDirec(self, lastPoint, currPoint):
+        if currPoint[0] == lastPoint[0]:
+            if currPoint[1] - lastPoint[1] == 1:
+                return 'Down'
+            if currPoint[1] - lastPoint[1] == -1:
+                return 'Up'
+        if currPoint[1] == lastPoint[1]:
+            if currPoint[0] - lastPoint[0] == 1:
+                return 'Right'
+            if currPoint[0] - lastPoint[0] == -1:
+                return 'Left'
+
+    def callDFS(self):
+        self.forward = [ [ (-1, -1) for i in range(0, 50) ] for j in range(0, 50)]
+        self.vis = [ [ False for i in range(0, 50) ] for j in range(0, 50) ]
+        self.dfs(self.body[0])
+        print(self.path)
+        self.path.pop()
+
+    #dfs搜索路径
+    def dfs(self, point):
+        self.vis[point[0]][point[1]] = True
+        if point == self.food.pos:
+            self.path.append(point)
+            return True
+
+        if self.forward[point[0]][point[1]] == (-1, -1):
+            lastPoint = self.body[1]
+        else:
+            lastPoint = self.forward[point[0]][point[1]]
+
+        #向右搜索
+        newPoint = (point[0]+1, point[1])
+        self.forward[newPoint[0]][newPoint[1]] = (point[0], point[1])
+        if not self.getDirec(lastPoint, point) == 'Left' and not self.vis[newPoint[0]][newPoint[1]] and newPoint[0] in range(self.gridDraw.gridDraw_x) and newPoint[1] in range(self.gridDraw.gridDraw_y):
+            if self.dfs(newPoint) == True:
+                self.path.append(point)
+                return True
+            else:
+                self.vis[newPoint[0]][newPoint[1]] = False
+                self.forward[newPoint[0]][newPoint[1]] = (-1, -1)
+
+        #向下搜索
+        newPoint = (point[0], point[1]+1)
+        self.forward[newPoint[0]][newPoint[1]] = (point[0], point[1])
+        if not self.getDirec(lastPoint, point) == 'Up' and not self.vis[newPoint[0]][newPoint[1]] and newPoint[0] in range(self.gridDraw.gridDraw_x) and newPoint[1] in range(self.gridDraw.gridDraw_y):
+            if self.dfs(newPoint) == True:
+                self.path.append(point)
+                return True
+            else:
+                self.vis[newPoint[0]][newPoint[1]] = False
+                self.forward[newPoint[0]][newPoint[1]] = (-1, -1)
+
+        #向左搜索
+        newPoint = (point[0]-1, point[1])
+        self.forward[newPoint[0]][newPoint[1]] = (point[0], point[1])
+        if not self.getDirec(lastPoint, point) == 'Right' and not self.vis[newPoint[0]][newPoint[1]] and newPoint[0] in range(self.gridDraw.gridDraw_x) and newPoint[1] in range(self.gridDraw.gridDraw_y):
+            if self.dfs(newPoint) == True:
+                self.path.append(point)
+                return True
+            else:
+                self.vis[newPoint[0]][newPoint[1]] = False
+                self.forward[newPoint[0]][newPoint[1]] = (-1, -1)
+
+        #向上搜索
+        newPoint = (point[0], point[1]-1)
+        self.forward[newPoint[0]][newPoint[1]] = (point[0], point[1])
+        if not self.getDirec(lastPoint, point) == 'Down' and not self.vis[newPoint[0]][newPoint[1]] and newPoint[0] in range(self.gridDraw.gridDraw_x) and newPoint[1] in range(self.gridDraw.gridDraw_y):
+            if self.dfs(newPoint) == True:
+                self.path.append(point)
+                return True
+            else:
+                self.vis[newPoint[0]][newPoint[1]] = False
+                self.forward[newPoint[0]][newPoint[1]] = (-1, -1)
+
+    #bfs搜索路径
     def bfs(self):
 
         headPos = self.body[0]
 
-        self.forward = [ [(-1, -1) for i in range(0, 50)] for j in range(0, 50)]
+        self.forward = [ [ (-1, -1) for i in range(0, 50) ] for j in range(0, 50)]
         self.vis = [ [False for i in range(0, 50)] for j in range(0, 50)]
 
-        que = [headPos]
+        que = Queue()
+        que.put(headPos)
         self.vis[headPos[0]][headPos[1]] = True
 
-        while not len(que) == 0:
-            headPos = que.pop(0)
-            if headPos == self.food.pos:
-                while not headPos == (-1, -1):
+        while not que.empty():
+            headPos = que.get()
+            if headPos == self.food.pos:            #吃到食物
+                while not headPos == (-1, -1):      #保存路径
                     self.path.append(headPos)
                     x = headPos[0]
                     y = headPos[1]
                     headPos = self.forward[x][y]
-                self.path.pop(-1)
+                self.path.pop(-1)                   #退出头节点
                 return
 
-            if not self.vis[headPos[0]+1][headPos[1]]:
+            if self.forward[headPos[0]][headPos[1]] == (-1, -1): #头节点开始搜索，需要判定可行搜索方向
+                lastPoint = self.body[1]
+            else:
+                lastPoint = self.forward[headPos[0]][headPos[1]]
+
+            if not self.getDirec(lastPoint, headPos) == 'Left' and not self.vis[headPos[0]+1][headPos[1]]:  #当前方向不向左时向右搜索
                 self.vis[headPos[0]+1][headPos[1]] = True
                 self.forward[headPos[0]+1][headPos[1]] = (headPos[0], headPos[1])
-                que.append((headPos[0]+1, headPos[1]))
+                que.put((headPos[0]+1, headPos[1]))
 
-            if not self.vis[headPos[0]-1][headPos[1]]:
-                self.vis[headPos[0]-1][headPos[1]] = True
-                self.forward[headPos[0]-1][headPos[1]] = (headPos[0], headPos[1])
-                que.append((headPos[0]-1, headPos[1]))
-
-            if not self.vis[headPos[0]][headPos[1]+1]:
+            if not self.getDirec(lastPoint, headPos) == 'Up' and not self.vis[headPos[0]][headPos[1]+1]:  #向下搜索
                 self.vis[headPos[0]][headPos[1]+1] = True
                 self.forward[headPos[0]][headPos[1]+1] = (headPos[0], headPos[1])
-                que.append((headPos[0], headPos[1]+1))
+                que.put((headPos[0], headPos[1]+1))
 
-            if not self.vis[headPos[0]][headPos[1]-1]:
+            if not self.getDirec(lastPoint, headPos) == 'Right' and not self.vis[headPos[0]-1][headPos[1]]:  #向左搜索
+                self.vis[headPos[0]-1][headPos[1]] = True
+                self.forward[headPos[0]-1][headPos[1]] = (headPos[0], headPos[1])
+                que.put((headPos[0]-1, headPos[1]))
+
+            if not self.getDirec(lastPoint, headPos) == 'Down' and not self.vis[headPos[0]][headPos[1]-1]:  #向上搜索
                 self.vis[headPos[0]][headPos[1]-1] = True
                 self.forward[headPos[0]][headPos[1]-1] = (headPos[0], headPos[1])
-                que.append((headPos[0], headPos[1]-1))
-        '''
-        direc = ('Up', 'Down', 'Left', 'Right')
-        for ix in range(0, 100):
-            self.path.append(direc[randint(0, 3)])
-        '''
+                que.put((headPos[0], headPos[1]-1))
 
     def display(self):
         self.gridDraw.drawSnakeHead(self.body[0], self.headPhoto, self.direction)
@@ -168,27 +246,6 @@ class Snake(object):
         self.gridDraw.drawSnakeTail(self.body[-1], self.tailPhoto, self.direction)
 
     def move(self):
-
-        #判断方向操作是否合理，若合理继续，不合理停止。
-        direcSet = ('Up', 'Down', 'Left', 'Right')
-        currentDirec = ''
-        firstBodyGrid = self.body[0]
-        secondBodyGrid = self.body[1]
-        if firstBodyGrid[0] == secondBodyGrid[0]:
-            if firstBodyGrid[1] > secondBodyGrid[1]:
-                currentDirec = 'Down'
-            else:
-                currentDirec = 'Up'
-        if firstBodyGrid[1] == secondBodyGrid[1]:
-            if firstBodyGrid[0] > secondBodyGrid[0]:
-                currentDirec = 'Right'
-            else:
-                currentDirec = 'Left'
-        if direcSet.index(currentDirec) - direcSet.index(self.direction) == -1:
-            raise IndexError('路径不合理')
-        if direcSet.index(currentDirec) - direcSet.index(self.direction) == 1:
-            raise IndexError('路径不合理')
-
 
         head = self.body[0]
         if self.direction == 'Up':
@@ -199,6 +256,7 @@ class Snake(object):
             new = (head[0]-1, head[1])
         else: new = (head[0]+1, head[1])
 
+        print(new)
         self.body.insert(0, new)
 
         if new not in self.avilable_gridDraw():
@@ -213,7 +271,7 @@ class Snake(object):
                 print('当前食物位置：', self.food.pos)
                 self.display_food()
                 self.score += 1
-                self.bfs()
+                self.callDFS()
                 print('新的食物位置', self.food.pos)
                 print('吃到食物，获取新路径：', self.path)
 
@@ -236,7 +294,7 @@ class Anakonda(tkinter.Frame):
 
         #self.master.bind("<Key>", self.key_release)
         self.snake.display()
-        self.snake.bfs()
+        self.snake.callDFS()
 
     def run(self):
         if not self.snake.status[0] == 'stop':
@@ -258,7 +316,7 @@ class Anakonda(tkinter.Frame):
 
         self.after(self.snake.speed, self.run)
 
-    def key_release(self, event):
+    def key_release(self, event):       #绑定键盘操作
 
         key = event.keysym
         key_dict = {"Up":"Down", "Down":"Up", "Left":"Right", "Right":"Left"}
